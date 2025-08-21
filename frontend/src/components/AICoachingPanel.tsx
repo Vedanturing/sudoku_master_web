@@ -414,10 +414,28 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
             </div>
           </div>
 
-          {/* AI Status Banner */}
-          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-            <AIStatusBanner />
-          </div>
+                {/* AI Status Banner */}
+      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+        <AIStatusBanner />
+      </div>
+
+      {/* Debug Info (Development Only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <details className="text-xs">
+            <summary className="cursor-pointer text-gray-600 dark:text-gray-400">
+              Debug Info (Click to expand)
+            </summary>
+            <div className="mt-2 space-y-1 text-gray-600 dark:text-gray-400">
+              <div>Session ID: {currentSession?.id || 'None'}</div>
+              <div>Hints Count: {currentSession?.hints?.length || 0}</div>
+              <div>Analysis: {currentSession?.analysis ? 'Available' : 'None'}</div>
+              <div>API Key: {getAIConfig().openrouter.apiKey ? 'Configured' : 'Missing'}</div>
+              <div>Timer: {timer.elapsedTime}ms ({Math.floor(timer.elapsedTime / 1000)}s)</div>
+            </div>
+          </details>
+        </div>
+      )}
 
           {/* Content */}
           <div className="p-4">
@@ -454,7 +472,15 @@ const AIStatusBanner: React.FC = () => {
             AI features in fallback mode
           </p>
           <p className="text-amber-600 dark:text-amber-300 text-xs mt-1">
-            Configure DeepSeek API key in your environment to enable full AI coaching features. 
+            To enable full AI coaching with DeepSeek and Qwen models, get your free API key from 
+            <a 
+              href="https://openrouter.ai" 
+              target="_blank" 
+              className="underline hover:text-amber-800 dark:hover:text-amber-100"
+            >
+              OpenRouter.ai
+            </a>
+            {' '}and add it to your environment variables. 
             <a 
               href="/AI_SETUP_GUIDE.md" 
               target="_blank" 

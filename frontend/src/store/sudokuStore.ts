@@ -471,18 +471,26 @@ export const useSudokuStore = create<GameState>((set, get) => ({
       });
     }
     
-    // Start the timer interval
+    // Clear any existing interval first
+    if ((window as any).sudokuTimerInterval) {
+      clearInterval((window as any).sudokuTimerInterval);
+    }
+    
+    // Start the timer interval with more frequent updates for accuracy
     const interval = setInterval(() => {
       const { timer } = get();
       if (!timer.isPaused && !timer.isGameComplete) {
+        const currentTime = Date.now();
+        const newElapsedTime = currentTime - timer.startTime;
+        
         set({
           timer: {
             ...timer,
-            elapsedTime: Date.now() - timer.startTime
+            elapsedTime: newElapsedTime
           }
         });
       }
-    }, 1000);
+    }, 100); // Update every 100ms for better accuracy
     
     // Store the interval ID for cleanup
     (window as any).sudokuTimerInterval = interval;

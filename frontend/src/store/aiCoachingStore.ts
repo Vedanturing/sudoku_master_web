@@ -129,11 +129,18 @@ export const useAICoachingStore = create<AICoachingStore>()(
             hint: {
               id: Math.random().toString(36).substr(2, 9),
               type: 'strategy',
-              message: "I'm unable to provide AI-powered hints right now. Try looking for cells where only one number can fit, or numbers that can only go in one specific place in a row, column, or box.",
+              message: `🔍 **Fallback Hint:** Since AI coaching is unavailable, here's a systematic approach:
+
+1. **Scan for Naked Singles**: Look for cells that can only contain one number
+2. **Find Hidden Singles**: Check if a number can only go in one place in a row/column/box
+3. **Look for Pairs**: Find two cells in a row/column/box that can only contain the same two numbers
+4. **Check Box-Line Interactions**: See if numbers in a box eliminate possibilities in rows/columns
+
+Start by looking at row 1 - can you find any cells where only one number can fit?`,
               difficulty: get().preferences.userLevel
             },
-            explanation: "AI coaching service temporarily unavailable",
-            relatedTechniques: ['naked-single', 'hidden-single']
+            explanation: "AI coaching service temporarily unavailable - using fallback hints",
+            relatedTechniques: ['naked-single', 'hidden-single', 'naked-pair', 'box-line-reduction']
           };
           
           return fallbackResponse;

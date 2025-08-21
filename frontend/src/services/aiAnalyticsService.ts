@@ -165,37 +165,69 @@ Be analytical, constructive, and specific in your recommendations.`
   private buildAnalysisPrompt(request: AnalyticsRequest): string {
     const { puzzle, solution, userMoves, difficulty, solveTime, hintsUsed, mistakes, techniquesAttempted } = request;
     
-    return `Analyze this completed Sudoku puzzle for a player:
+    return `You are an expert Sudoku coach analyzing a player's performance. Provide a DEEP, DETAILED analysis with actionable insights.
 
+PUZZLE DETAILS:
 Original Puzzle:
 ${this.formatGrid(puzzle)}
 
 Solution:
 ${this.formatGrid(solution)}
 
-User Performance:
-- Difficulty: ${difficulty}
-- Solve Time: ${solveTime} seconds
-- Hints Used: ${hintsUsed}
+PERFORMANCE METRICS:
+- Difficulty Level: ${difficulty}
+- Total Solve Time: ${solveTime} seconds
+- Hints Used: ${hintsUsed}/3
 - Mistakes Made: ${mistakes}
-- Techniques Attempted: ${techniquesAttempted.join(', ')}
+- Techniques Attempted: ${techniquesAttempted.length > 0 ? techniquesAttempted.join(', ') : 'None recorded'}
 
-User Moves (chronological):
+MOVE-BY-MOVE ANALYSIS:
 ${userMoves.map((move, index) => 
-  `${index + 1}. Row ${move.row + 1}, Col ${move.col + 1}: ${move.value} ${move.wasCorrect ? '(correct)' : '(incorrect)'}`
+  `${index + 1}. Row ${move.row + 1}, Col ${move.col + 1}: ${move.value} ${move.wasCorrect ? '✓ CORRECT' : '✗ INCORRECT'}`
 ).join('\n')}
 
-Provide a comprehensive analysis including:
-1. Overall performance score (0-100)
-2. Key strengths demonstrated
-3. Areas of weakness
-4. Specific mistakes and their causes
-5. Technique usage effectiveness
-6. Time management insights
-7. Specific training recommendations
-8. Next puzzle difficulty suggestion
+REQUIRED ANALYSIS (be extremely detailed):
 
-Format your response as structured analysis data.`;
+1. PERFORMANCE SCORING (0-100):
+   - Speed Score: Rate based on difficulty and time
+   - Accuracy Score: Based on mistakes and hints used
+   - Technique Score: Based on solving approach
+   - Overall Score: Weighted average
+
+2. STRENGTHS ANALYSIS:
+   - What did the player do well?
+   - Which techniques were used effectively?
+   - Good problem-solving patterns observed
+
+3. WEAKNESSES & MISTAKES:
+   - Specific error patterns
+   - Why mistakes occurred
+   - Missed opportunities for techniques
+   - Time inefficiencies
+
+4. TECHNIQUE ASSESSMENT:
+   - Which techniques were attempted vs. needed?
+   - Difficulty level appropriateness
+   - Technique execution quality
+
+5. TIME MANAGEMENT:
+   - Time distribution analysis
+   - Where time was spent efficiently/inefficiently
+   - Speed vs. accuracy trade-offs
+
+6. PERSONALIZED TRAINING PLAN:
+   - Specific techniques to practice (with difficulty progression)
+   - Puzzle types to focus on
+   - Speed training exercises
+   - Common mistake prevention strategies
+   - Next difficulty level recommendation
+
+7. IMMEDIATE IMPROVEMENT ACTIONS:
+   - 3 specific things to practice today
+   - 1 technique to master this week
+   - Puzzle difficulty adjustment strategy
+
+Format your response as detailed, structured analysis with specific examples and actionable recommendations.`;
   }
 
   private buildRecommendationPrompt(analyses: PuzzleAnalysis[]): string {

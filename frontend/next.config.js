@@ -4,6 +4,8 @@ const nextConfig = {
   swcMinify: true,
   experimental: {
     optimizeCss: true,
+    optimizePackageImports: false,
+    webpackBuildWorker: false,
   },
   images: {
     domains: ['localhost', 'firebasestorage.googleapis.com'],
@@ -26,6 +28,12 @@ const nextConfig = {
         'timers/promises': false,
       };
     }
+    
+    // Fix for lucide-react barrel optimization issue in Next.js 14
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'lucide-react': 'lucide-react/dist/esm/index.js',
+    };
     
     // Optimize bundle size
     config.optimization = {

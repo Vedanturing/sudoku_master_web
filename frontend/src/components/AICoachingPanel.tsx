@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Lightbulb, 
@@ -54,6 +54,21 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
     checkCount
   } = useSudokuStore();
 
+  // Initialize coaching session when panel opens
+  useEffect(() => {
+    if (isOpen && !currentSession) {
+      console.log('Starting new coaching session...');
+      startCoachingSession('current-game', 'combined');
+    }
+  }, [isOpen, currentSession, startCoachingSession]);
+
+  // Debug logging for session state
+  useEffect(() => {
+    console.log('Current session state:', currentSession);
+    console.log('Session hints:', currentSession?.hints);
+    console.log('Session analysis:', currentSession?.analysis);
+  }, [currentSession]);
+
   const handleGetHint = async () => {
     if (!solution) return;
 
@@ -67,7 +82,9 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
     };
 
     try {
-      await getHint(request);
+      console.log('Requesting hint with:', request);
+      const response = await getHint(request);
+      console.log('Hint response received:', response);
     } catch (error) {
       console.error('Failed to get hint:', error);
     }
@@ -92,7 +109,9 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
     };
 
     try {
-      await analyzePuzzle(request);
+      console.log('Requesting puzzle analysis with:', request);
+      const response = await analyzePuzzle(request);
+      console.log('Analysis response received:', response);
     } catch (error) {
       console.error('Failed to analyze puzzle:', error);
     }
@@ -168,15 +187,22 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
         )}
       </button>
 
+
+
       {/* Current Hints */}
-      {currentSession?.hints && currentSession.hints.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="font-medium text-gray-700 dark:text-gray-300">Recent Hints:</h4>
-          {currentSession.hints.map((hint, index) => (
+      <div className="space-y-3">
+        <h4 className="font-medium text-gray-700 dark:text-gray-300">Recent Hints:</h4>
+        {currentSession?.hints && currentSession.hints.length > 0 ? (
+          currentSession.hints.map((hint, index) => (
             <HintCard key={hint.id} hint={hint} index={index} />
-          ))}
-        </div>
-      )}
+          ))
+        ) : (
+          <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+            <Lightbulb className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>No hints yet. Click "Get AI Hint" to get started!</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -230,9 +256,9 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
       </button>
 
       {/* Analysis Results */}
-      {currentSession?.analysis && (
-        <div className="space-y-3">
-          <h4 className="font-medium text-gray-700 dark:text-gray-300">Analysis Results:</h4>
+      <div className="space-y-3">
+        <h4 className="font-medium text-gray-700 dark:text-gray-300">Analysis Results:</h4>
+        {currentSession?.analysis ? (
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 text-blue-500" />
@@ -257,8 +283,13 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+            <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>No analysis yet. Click "Analyze Performance" to get insights!</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 

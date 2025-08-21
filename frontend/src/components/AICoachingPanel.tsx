@@ -13,7 +13,9 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  MessageCircle,
+  Send
 } from 'lucide-react';
 import { useAICoachingStore } from '../store/aiCoachingStore';
 import { useSudokuStore } from '../store/sudokuStore';
@@ -27,10 +29,19 @@ interface AICoachingPanelProps {
 }
 
 const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'hints' | 'analytics' | 'settings'>('hints');
+  const [activeTab, setActiveTab] = useState<'hints' | 'analytics' | 'chat' | 'settings'>('hints');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [customQuestion, setCustomQuestion] = useState('');
   const [selectedTechnique, setSelectedTechnique] = useState('');
+  const [chatMessages, setChatMessages] = useState<Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+    technique?: string;
+  }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
   const {
     preferences,
@@ -122,6 +133,98 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
       await explainTechnique(technique);
     } catch (error) {
       console.error('Failed to explain technique:', error);
+    }
+  };
+
+  const handleChatMessage = async (message: string) => {
+    if (!message.trim()) return;
+
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user' as const,
+      content: message,
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      // Create a comprehensive prompt for the AI
+      const prompt = `You are an expert Sudoku coach having a conversation with a student. 
+
+Current context:
+- User level: ${preferences.userLevel}
+- Current difficulty: ${difficulty}
+- User just asked: "${message}"
+
+Please provide a helpful, conversational response that:
+1. Answers their question directly and clearly
+2. Uses examples when helpful
+3. Suggests related techniques to practice
+4. Encourages learning and practice
+5. Adapts to their skill level
+6. References standard Sudoku terminology from hodoku.sourceforge.net
+
+Keep your response conversational but educational. If they're asking about a specific technique, explain it with examples. If they're asking for general advice, provide actionable tips.`;
+
+      const response = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: prompt,
+          userLevel: preferences.userLevel,
+          difficulty: difficulty
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const assistantMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant' as const,
+          content: data.response || 'I apologize, but I\'m having trouble responding right now. Please try asking your question again.',
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, assistantMessage]);
+      } else {
+        // Fallback response if API fails
+        const fallbackMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant' as const,
+          content: `I'd be happy to help you with "${message}"! Since I'm currently in fallback mode, here are some general tips:
+
+🔍 **For Technique Questions**: Look for patterns like naked singles, hidden singles, and pairs
+📚 **For Learning**: Practice with easier puzzles first, then gradually increase difficulty
+⏱️ **For Speed**: Focus on accuracy before speed - good technique leads to faster solving
+🎯 **For Specific Help**: Try asking about specific techniques like "What is a naked single?" or "How do I find hidden pairs?"
+
+What specific aspect of Sudoku would you like to learn more about?`,
+          timestamp: new Date()
+        };
+        setChatMessages(prev => [...prev, fallbackMessage]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant' as const,
+        content: 'I apologize, but I\'m having trouble responding right now. Please try asking your question again or check your internet connection.',
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleChatMessage(chatInput);
     }
   };
 
@@ -293,6 +396,110 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
     </div>
   );
 
+  const renderChatSection = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <MessageCircle className="w-5 h-5 text-purple-500" />
+        <h3 className="text-lg font-semibold">AI Chat Coach</h3>
+      </div>
+
+      {/* Chat Messages */}
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 h-96 overflow-y-auto space-y-3">
+        {chatMessages.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p className="text-sm">Start a conversation with your AI coach!</p>
+            <p className="text-xs mt-1">Ask about techniques, strategies, or get personalized advice.</p>
+          </div>
+        ) : (
+          chatMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                  msg.role === 'user'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
+                }`}
+              >
+                <div className="whitespace-pre-wrap">{msg.content}</div>
+                <div className={`text-xs mt-1 ${
+                  msg.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+        
+        {isChatLoading && (
+          <div className="flex justify-start">
+            <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
+                <span>AI is thinking...</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Chat Input */}
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <textarea
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Ask about Sudoku techniques, strategies, or get personalized advice..."
+            className="flex-1 p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
+            rows={3}
+            disabled={isChatLoading}
+          />
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            Press Enter to send, Shift+Enter for new line
+          </div>
+          <button
+            onClick={() => handleChatMessage(chatInput)}
+            disabled={isChatLoading || !chatInput.trim()}
+            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center gap-2"
+          >
+            <Send className="w-4 h-4" />
+            Send
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Questions */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Quick Questions:
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            'What is a naked single?',
+            'How do I find hidden pairs?',
+            'Tips for beginners?',
+            'Speed solving advice?'
+          ].map((question) => (
+                         <button
+               key={question}
+               onClick={() => setChatInput(question)}
+               className="text-xs p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 transition-colors"
+             >
+               {question}
+             </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   const renderSettingsSection = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
@@ -392,12 +599,13 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex mt-4 border-b border-gray-200 dark:border-gray-700">
-              {[
-                { id: 'hints', label: 'Hints', icon: Lightbulb },
-                { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-                { id: 'settings', label: 'Settings', icon: Settings }
-              ].map((tab) => (
+                         <div className="flex mt-4 border-b border-gray-200 dark:border-gray-700">
+               {[
+                 { id: 'hints', label: 'Hints', icon: Lightbulb },
+                 { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+                 { id: 'chat', label: 'Chat', icon: MessageCircle },
+                 { id: 'settings', label: 'Settings', icon: Settings }
+               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
@@ -437,12 +645,13 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
         </div>
       )}
 
-          {/* Content */}
-          <div className="p-4">
-            {activeTab === 'hints' && renderHintSection()}
-            {activeTab === 'analytics' && renderAnalyticsSection()}
-            {activeTab === 'settings' && renderSettingsSection()}
-          </div>
+                     {/* Content */}
+           <div className="p-4">
+             {activeTab === 'hints' && renderHintSection()}
+             {activeTab === 'analytics' && renderAnalyticsSection()}
+             {activeTab === 'chat' && renderChatSection()}
+             {activeTab === 'settings' && renderSettingsSection()}
+           </div>
         </motion.div>
       )}
     </AnimatePresence>

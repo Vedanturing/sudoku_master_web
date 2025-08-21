@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  transpilePackages: ['lucide-react'],
   experimental: {
     optimizeCss: true,
     optimizePackageImports: false,
@@ -32,8 +33,13 @@ const nextConfig = {
     // Fix for lucide-react barrel optimization issue in Next.js 14
     config.resolve.alias = {
       ...config.resolve.alias,
-      'lucide-react': 'lucide-react/dist/esm/index.js',
     };
+    
+    // Ensure proper module resolution for lucide-react
+    config.resolve.modules = [
+      ...config.resolve.modules,
+      'node_modules'
+    ];
     
     // Optimize bundle size
     config.optimization = {

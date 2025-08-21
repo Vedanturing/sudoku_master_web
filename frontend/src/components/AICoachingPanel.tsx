@@ -19,6 +19,7 @@ import { useAICoachingStore } from '../store/aiCoachingStore';
 import { useSudokuStore } from '../store/sudokuStore';
 import { TeachingHint, TeachingRequest } from '../services/aiTeachingService';
 import { AnalyticsRequest } from '../services/aiAnalyticsService';
+import { getAIConfig } from '../config/aiConfig';
 
 interface AICoachingPanelProps {
   isOpen: boolean;
@@ -77,7 +78,7 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
 
     // Convert grid to number array and track user moves
     const currentGrid = grid.map(row => row.map(cell => cell.value));
-    const userMoves = []; // This would need to be tracked in the sudoku store
+    const userMoves: Array<{row: number, col: number, value: number, timestamp: number, wasCorrect: boolean}> = []; // This would need to be tracked in the sudoku store
     
     const request: AnalyticsRequest = {
       puzzle: currentGrid,
@@ -382,6 +383,11 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
             </div>
           </div>
 
+          {/* AI Status Banner */}
+          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+            <AIStatusBanner />
+          </div>
+
           {/* Content */}
           <div className="p-4">
             {activeTab === 'hints' && renderHintSection()}
@@ -391,6 +397,44 @@ const AICoachingPanel: React.FC<AICoachingPanelProps> = ({ isOpen, onClose }) =>
         </motion.div>
       )}
     </AnimatePresence>
+  );
+};
+
+// AI Status Banner Component
+const AIStatusBanner: React.FC = () => {
+  const config = getAIConfig();
+  const hasApiKey = !!config.openrouter.apiKey;
+
+  if (hasApiKey) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+        <CheckCircle className="w-4 h-4" />
+        <span>AI features enabled</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+      <div className="flex items-start gap-2">
+        <HelpCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+        <div className="text-sm">
+          <p className="text-amber-800 dark:text-amber-200 font-medium">
+            AI features in fallback mode
+          </p>
+          <p className="text-amber-600 dark:text-amber-300 text-xs mt-1">
+            Configure DeepSeek API key in your environment to enable full AI coaching features. 
+            <a 
+              href="/AI_SETUP_GUIDE.md" 
+              target="_blank" 
+              className="underline hover:text-amber-800 dark:hover:text-amber-100"
+            >
+              Setup Guide
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 

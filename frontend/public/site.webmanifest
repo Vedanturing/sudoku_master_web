@@ -1,0 +1,26 @@
+{
+  "name": "Sudoku Master",
+  "short_name": "Sudoku Master",
+  "description": "Advanced Sudoku game with AI coaching and training features",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/patterns/placeholder.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/patterns/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "puzzle", "education"],
+  "lang": "en"
+}

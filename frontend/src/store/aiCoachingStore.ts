@@ -123,7 +123,20 @@ export const useAICoachingStore = create<AICoachingStore>()(
           return response;
         } catch (error) {
           console.error('Error getting hint:', error);
-          throw error;
+          
+          // Create a fallback hint response for better user experience
+          const fallbackResponse: TeachingResponse = {
+            hint: {
+              id: Math.random().toString(36).substr(2, 9),
+              type: 'strategy',
+              message: "I'm unable to provide AI-powered hints right now. Try looking for cells where only one number can fit, or numbers that can only go in one specific place in a row, column, or box.",
+              difficulty: get().preferences.userLevel
+            },
+            explanation: "AI coaching service temporarily unavailable",
+            relatedTechniques: ['naked-single', 'hidden-single']
+          };
+          
+          return fallbackResponse;
         } finally {
           set({ isGeneratingHint: false });
         }

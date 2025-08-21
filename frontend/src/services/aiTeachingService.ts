@@ -48,20 +48,23 @@ class AITeachingService {
     this.config = getAIConfig();
   }
 
-  private async callDeepseekAPI(prompt: string): Promise<string> {
-    if (!this.config.deepseek.apiKey) {
-      throw new Error('DeepSeek API key not configured');
+  private async callOpenRouterAPI(prompt: string, modelType: 'deepseek' | 'qwen' = 'deepseek'): Promise<string> {
+    if (!this.config.openrouter.apiKey) {
+      console.warn('OpenRouter API key not configured. Using fallback hints.');
+      return this.getFallbackHint(prompt);
     }
 
     try {
-      const response = await fetch(this.config.deepseek.baseUrl, {
+      const response = await fetch(this.config.openrouter.baseUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.deepseek.apiKey}`,
+          'Authorization': `Bearer ${this.config.openrouter.apiKey}`,
           'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'Sudoku Master'
         },
         body: JSON.stringify({
-          model: this.config.deepseek.model,
+          model: this.config.openrouter.models[modelType],
           messages: [
             {
               role: 'system',
@@ -86,20 +89,20 @@ Use clear, concise language and provide practical examples when possible.`
       });
 
       if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
+        throw new Error(`OpenRouter API call failed: ${response.status}`);
       }
 
       const data = await response.json();
       return data.choices[0]?.message?.content || 'No response from AI';
     } catch (error) {
-      console.error('Error calling DeepSeek API:', error);
+      console.error('Error calling OpenRouter API:', error);
       throw error;
     }
   }
 
   async getHint(request: TeachingRequest): Promise<TeachingResponse> {
     const prompt = this.buildHintPrompt(request);
-    const aiResponse = await this.callDeepseekAPI(prompt);
+    const aiResponse = await this.callOpenRouterAPI(prompt, 'deepseek');
     
     return this.parseHintResponse(aiResponse, request);
   }
@@ -115,7 +118,7 @@ Use clear, concise language and provide practical examples when possible.`
     
     Keep the explanation appropriate for ${userLevel} level.`;
 
-    const aiResponse = await this.callDeepseekAPI(prompt);
+    const aiResponse = await this.callOpenRouterAPI(prompt, 'deepseek');
     
     return this.parseTechniqueExplanation(aiResponse, technique, userLevel);
   }
@@ -137,7 +140,7 @@ Use clear, concise language and provide practical examples when possible.`
     
     Format as numbered steps.`;
 
-    const aiResponse = await this.callDeepseekAPI(prompt);
+    const aiResponse = await this.callOpenRouterAPI(prompt, 'deepseek');
     
     return this.parseStepByStepResponse(aiResponse, userLevel);
   }
@@ -312,6 +315,43 @@ Use clear, concise language and provide practical examples when possible.`
     }
 
     return undefined;
+  }
+
+  private getFallbackHint(prompt: string): string {
+    // Provide helpful fallback hints when API is not configured
+    const fallbackHints = [
+      {
+        keywords: ['beginner', 'easy', 'start'],
+        hint: "🔍 **Basic Strategy Tip:** Look for cells that can only contain one number. These are called 'Naked Singles' - when only one number can fit in a cell based on the row, column, and 3x3 box constraints."
+      },
+      {
+        keywords: ['hint', 'help', 'stuck'],
+        hint: "💡 **General Solving Tip:** Start by looking for the easiest moves first:\n1. Find cells with only one possible number\n2. Look for numbers that can only go in one place in a row, column, or box\n3. Use pencil marks to track possibilities\n4. Focus on rows, columns, or boxes that are almost complete"
+      },
+      {
+        keywords: ['intermediate', 'medium'],
+        hint: "🎯 **Intermediate Strategy:** Try using 'Hidden Singles' - look for a number that can only be placed in one cell within a row, column, or 3x3 box, even if that cell has other candidates."
+      },
+      {
+        keywords: ['advanced', 'expert', 'difficult'],
+        hint: "🚀 **Advanced Technique:** Consider using 'Naked Pairs' or 'Hidden Pairs'. When two cells in the same row/column/box can only contain the same two numbers, you can eliminate those numbers from other cells in that unit."
+      },
+      {
+        keywords: ['technique', 'strategy', 'method'],
+        hint: "📚 **Sudoku Techniques:** The most common solving techniques are:\n• Naked/Hidden Singles\n• Naked/Hidden Pairs\n• Pointing Pairs/Triples\n• Box/Line Reduction\n• X-Wing\n• Y-Wing\n\nStart with simpler techniques and progress to more advanced ones."
+      }
+    ];
+
+    // Find the most relevant fallback hint
+    const promptLower = prompt.toLowerCase();
+    for (const fallback of fallbackHints) {
+      if (fallback.keywords.some(keyword => promptLower.includes(keyword))) {
+        return fallback.hint;
+      }
+    }
+
+    // Default fallback hint
+    return "🎲 **AI Coach Unavailable:** The AI coaching feature requires API configuration. In the meantime, try these general tips:\n\n• Look for cells with only one possible number\n• Find numbers that can only go in one specific place\n• Use the process of elimination\n• Focus on completing rows, columns, or boxes that are nearly full\n• Take breaks and come back with fresh eyes!\n\n*To enable full AI coaching, please configure the DeepSeek API key in your environment settings.*";
   }
 }
 

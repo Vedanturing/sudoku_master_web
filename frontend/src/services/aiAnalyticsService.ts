@@ -82,20 +82,22 @@ class AIAnalyticsService {
     this.config = getAIConfig();
   }
 
-  private async callQwenAPI(prompt: string): Promise<string> {
-    if (!this.config.qwen.apiKey) {
-      throw new Error('Qwen API key not configured');
+  private async callOpenRouterAPI(prompt: string, modelType: 'deepseek' | 'qwen' = 'qwen'): Promise<string> {
+    if (!this.config.openrouter.apiKey) {
+      throw new Error('OpenRouter API key not configured');
     }
 
     try {
-      const response = await fetch(this.config.qwen.baseUrl, {
+      const response = await fetch(this.config.openrouter.baseUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.qwen.apiKey}`,
+          'Authorization': `Bearer ${this.config.openrouter.apiKey}`,
           'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'Sudoku Master'
         },
         body: JSON.stringify({
-          model: this.config.qwen.model,
+          model: this.config.openrouter.models[modelType],
           messages: [
             {
               role: 'system',
@@ -120,27 +122,27 @@ Be analytical, constructive, and specific in your recommendations.`
       });
 
       if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
+        throw new Error(`OpenRouter API call failed: ${response.status}`);
       }
 
       const data = await response.json();
       return data.choices[0]?.message?.content || 'No response from AI';
     } catch (error) {
-      console.error('Error calling Qwen API:', error);
+      console.error('Error calling OpenRouter API:', error);
       throw error;
     }
   }
 
   async analyzePuzzle(request: AnalyticsRequest): Promise<AnalyticsResponse> {
     const prompt = this.buildAnalysisPrompt(request);
-    const aiResponse = await this.callQwenAPI(prompt);
+    const aiResponse = await this.callOpenRouterAPI(prompt, 'qwen');
     
     return this.parseAnalysisResponse(aiResponse, request);
   }
 
   async generateTrainingRecommendations(userId: string, recentAnalyses: PuzzleAnalysis[]): Promise<TrainingRecommendation> {
     const prompt = this.buildRecommendationPrompt(recentAnalyses);
-    const aiResponse = await this.callQwenAPI(prompt);
+    const aiResponse = await this.callOpenRouterAPI(prompt, 'qwen');
     
     return this.parseRecommendationResponse(aiResponse, userId, recentAnalyses);
   }
@@ -156,7 +158,7 @@ Be analytical, constructive, and specific in your recommendations.`
     4. Areas for improvement
     5. Related techniques to practice`;
     
-    const aiResponse = await this.callQwenAPI(prompt);
+    const aiResponse = await this.callOpenRouterAPI(prompt, 'qwen');
     return this.parseTechniqueAnalysis(aiResponse, technique);
   }
 

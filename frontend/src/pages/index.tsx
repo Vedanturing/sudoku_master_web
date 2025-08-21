@@ -46,7 +46,30 @@ const HomePage: React.FC = () => {
               <h1 className="text-xl font-bold text-gray-800">Sudoku Master</h1>
             </div>
             
-            {/* Training Button */}
+            {/* Auth Buttons - Only show when user is not logged in */}
+            {!user && (
+              <div className="flex items-center gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/login')}
+                  className="text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-all duration-200"
+                >
+                  Login
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/signup')}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  Sign Up
+                </motion.button>
+              </div>
+            )}
+            
+            {/* Training Button - Show for all users */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -98,6 +121,39 @@ const HomePage: React.FC = () => {
               Start Training
             </motion.button>
           </div>
+          
+          {/* Auth CTA - Only show when user is not logged in */}
+          {!user && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="mt-8"
+            >
+              <p className="text-gray-600 mb-4">
+                Create an account to save your progress and unlock advanced features
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/signup')}
+                  className="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                >
+                  Create Free Account
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/login')}
+                  className="text-gray-700 hover:text-gray-900 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-all duration-200 border border-gray-300 hover:border-gray-400"
+                >
+                  Already have an account? Login
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
 
           {/* Guest Mode Option */}
           {!user && (
